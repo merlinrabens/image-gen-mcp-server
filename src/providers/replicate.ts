@@ -86,8 +86,22 @@ export class ReplicateProvider extends ImageProvider {
       }
 
       // Download and convert images
+      // Output can be: array of URLs, single URL string, or FileOutput object
+      let outputUrls: string[];
+      if (Array.isArray(result.output)) {
+        outputUrls = result.output;
+      } else if (typeof result.output === 'string') {
+        outputUrls = [result.output];
+      } else if (result.output && typeof result.output === 'object') {
+        // FileOutput object - extract URL
+        const url = result.output.url || result.output;
+        outputUrls = [typeof url === 'string' ? url : String(url)];
+      } else {
+        throw new ProviderError('Unexpected output format from Replicate', this.name, false);
+      }
+
       const images = await Promise.all(
-        result.output.map(async (url: string) => {
+        outputUrls.map(async (url: string) => {
           const dataUrl = await this.downloadImage(url);
           return {
             dataUrl,
@@ -124,15 +138,29 @@ export class ReplicateProvider extends ImageProvider {
   private async createPrediction(model: string, input: any, apiToken: string): Promise<any> {
     const controller = this.createTimeout();
 
-    // Check if this is an official model (use model name directly)
-    const version = await this.getModelVersion(model, apiToken);
+    // Official models use a different endpoint: /models/{owner}/{name}/predictions
+    // Community models use: /predictions with a version parameter
+    const isOfficial = this.isOfficialModel(model);
 
-    // Build request body - official models use 'model', community models use 'version'
-    const requestBody = version
-      ? { version, input }
-      : { model, input };
+    let url: string;
+    let requestBody: any;
 
-    const { statusCode, body } = await request('https://api.replicate.com/v1/predictions', {
+    if (isOfficial) {
+      // Official models: use /models/{owner}/{name}/predictions endpoint
+      // No version needed - Replicate handles it automatically
+      url = `https://api.replicate.com/v1/models/${model}/predictions`;
+      requestBody = { input };
+    } else {
+      // Community models: use /predictions endpoint with version
+      url = 'https://api.replicate.com/v1/predictions';
+      const version = await this.getModelVersion(model, apiToken);
+      if (!version) {
+        throw new ProviderError(`Could not find version for model: ${model}`, this.name, false);
+      }
+      requestBody = { version, input };
+    }
+
+    const { statusCode, body } = await request(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiToken}`,
@@ -187,12 +215,9 @@ export class ReplicateProvider extends ImageProvider {
   }
 
   /**
-   * Get the latest version ID for a model
+   * Check if this is an official model that uses the model parameter
    */
-  private async getModelVersion(model: string, apiToken: string): Promise<string> {
-    // For official models (black-forest-labs/*), use the model name directly
-    // Replicate handles version resolution automatically for official models
-    // For community models, we fetch the latest version dynamically
+  private isOfficialModel(model: string): boolean {
     const officialModels = [
       'black-forest-labs/flux-2-pro',
       'black-forest-labs/flux-2-dev',
@@ -202,10 +227,20 @@ export class ReplicateProvider extends ImageProvider {
       'black-forest-labs/flux-schnell',
       'black-forest-labs/flux-dev'
     ];
+    return officialModels.includes(model);
+  }
 
-    // If it's an official model, return undefined to use model name directly
-    if (officialModels.includes(model)) {
-      return undefined as any; // Will trigger model-based prediction
+  /**
+   * Get the latest version ID for a model
+   */
+  private async getModelVersion(model: string, apiToken: string): Promise<string | null> {
+    // For official models (black-forest-labs/*), use the model name directly
+    // Replicate handles version resolution automatically for official models
+    // For community models, we fetch the latest version dynamically
+
+    // If it's an official model, return null to use model name directly
+    if (this.isOfficialModel(model)) {
+      return null;
     }
 
     // Legacy hardcoded versions for community models

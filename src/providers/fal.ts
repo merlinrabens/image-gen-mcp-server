@@ -367,7 +367,7 @@ export class FalProvider extends ImageProvider {
 
     return {
       provider: this.name,
-      model: input.model || 'fast-sdxl',
+      model: input.model || 'flux-2-pro',
       images: downloadedImages,
       warnings: warnings.length > 0 ? warnings : undefined
     };

@@ -69,7 +69,7 @@ export class IdeogramProvider extends ImageProvider {
     const cached = this.getCachedResult(cacheKey);
     if (cached) return cached;
 
-    const model = input.model || 'V_2';
+    const model = input.model || 'V_3';
 
     logger.info(`Ideogram generating image`, { model, prompt: input.prompt.slice(0, 50) });
 
@@ -82,25 +82,48 @@ export class IdeogramProvider extends ImageProvider {
       // Detect if this is a text-heavy request
       const isTextHeavy = this.detectTextRequest(input.prompt);
 
-      // Build request body
-      const requestBody: any = {
-        image_request: {
-          prompt: input.prompt,
-          model,
-          aspect_ratio: this.calculateAspectRatio(input.width, input.height),
-          // Magic prompt enhances the prompt automatically
-          magic_prompt_option: isTextHeavy ? 'OFF' : 'AUTO'
-        }
-      };
+      // V3 models use a different endpoint and request format
+      const isV3 = model === 'V_3' || model === 'V_3_TURBO';
 
-      // Add style preset for logos/posters if detected
-      const stylePreset = this.detectStylePreset(input.prompt);
-      if (stylePreset) {
-        requestBody.image_request.style_type = stylePreset;
+      let requestBody: any;
+      let endpoint: string;
+
+      if (isV3) {
+        // V3 endpoint: https://api.ideogram.ai/v1/ideogram-v3/generate
+        endpoint = 'https://api.ideogram.ai/v1/ideogram-v3/generate';
+        requestBody = {
+          prompt: input.prompt,
+          aspect_ratio: this.calculateAspectRatioV3(input.width, input.height),
+          magic_prompt: isTextHeavy ? 'OFF' : 'AUTO',
+          rendering_speed: model === 'V_3_TURBO' ? 'TURBO' : 'DEFAULT'
+        };
+
+        // Add style type for logos/posters if detected
+        const stylePreset = this.detectStylePreset(input.prompt);
+        if (stylePreset) {
+          requestBody.style_type = stylePreset;
+        }
+      } else {
+        // Legacy V1/V2 endpoint
+        endpoint = 'https://api.ideogram.ai/generate';
+        requestBody = {
+          image_request: {
+            prompt: input.prompt,
+            model,
+            aspect_ratio: this.calculateAspectRatio(input.width, input.height),
+            magic_prompt_option: isTextHeavy ? 'OFF' : 'AUTO'
+          }
+        };
+
+        // Add style preset for logos/posters if detected
+        const stylePreset = this.detectStylePreset(input.prompt);
+        if (stylePreset) {
+          requestBody.image_request.style_type = stylePreset;
+        }
       }
 
       const { statusCode, body } = await request(
-        'https://api.ideogram.ai/generate',
+        endpoint,
         {
           method: 'POST',
           headers: {
@@ -334,7 +357,7 @@ export class IdeogramProvider extends ImageProvider {
   }
 
   /**
-   * Calculate aspect ratio from dimensions
+   * Calculate aspect ratio from dimensions (legacy V1/V2 format)
    */
   private calculateAspectRatio(width?: number, height?: number): string {
     if (!width || !height) {
@@ -367,6 +390,43 @@ export class IdeogramProvider extends ImageProvider {
     }
 
     logger.debug(`Mapped ${width}x${height} to Ideogram aspect ratio ${closest.name}`);
+    return closest.name;
+  }
+
+  /**
+   * Calculate aspect ratio from dimensions (V3 format: "1x1", "16x9", etc.)
+   */
+  private calculateAspectRatioV3(width?: number, height?: number): string {
+    if (!width || !height) {
+      return '1x1'; // Default square
+    }
+
+    const ratio = width / height;
+
+    // V3 uses simple format like "1x1", "16x9", "9x16", "4x3", "3x4"
+    const ratios = [
+      { name: '1x1', value: 1.0 },
+      { name: '16x9', value: 1.778 },
+      { name: '9x16', value: 0.5625 },
+      { name: '4x3', value: 1.333 },
+      { name: '3x4', value: 0.75 },
+      { name: '3x2', value: 1.5 },
+      { name: '2x3', value: 0.667 }
+    ];
+
+    // Find closest ratio
+    let closest = ratios[0];
+    let minDiff = Math.abs(ratio - closest.value);
+
+    for (const r of ratios) {
+      const diff = Math.abs(ratio - r.value);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = r;
+      }
+    }
+
+    logger.debug(`Mapped ${width}x${height} to Ideogram V3 aspect ratio ${closest.name}`);
     return closest.name;
   }
 
