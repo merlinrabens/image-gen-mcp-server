@@ -870,5 +870,8 @@ process.stdout.on('error', () => process.exit(0));
 await fs.appendFile(DEBUG_FILE, `\n[${new Date().toISOString()}] Image Gen MCP Started - PID=${process.pid}\n`).catch(() => {});
 await debugLog('Server connected successfully');
 
-// Start periodic cleanup of old temp files
-startTempFileCleanup();
+// Defer cleanup initialization to not block the event loop during critical handshake period
+// This prevents potential timing issues where the cleanup could interfere with MCP startup
+setImmediate(() => {
+  startTempFileCleanup();
+});

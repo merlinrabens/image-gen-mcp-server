@@ -3,13 +3,14 @@
 ## Project Overview
 MCP (Model Context Protocol) server providing unified image generation across 9 AI providers with intelligent selection, fallback chains, and enterprise-grade security.
 
-## Provider Strengths & Positioning
+## Provider Strengths & Positioning (December 2025)
 
-### OPENAI (DALL-E 3)
-- **Best for**: Versatile general-purpose generation, creative interpretation
-- **Strengths**: Exceptional prompt understanding, composition, safety filtering
-- **Quality**: High, consistent across use cases
+### OPENAI (gpt-image-1 - Default)
+- **Best for**: Versatile general-purpose generation, creative interpretation, text rendering
+- **Strengths**: Superior instruction following, exceptional text rendering, detailed editing, world knowledge
+- **Quality**: Highest quality, consistent across use cases
 - **Speed**: Moderate (10-30s)
+- **Default Model**: `gpt-image-1` (OpenAI's latest recommended model)
 - **Position**: Primary fallback - most versatile and reliable
 
 ### STABILITY (Stable Diffusion XL)
@@ -26,12 +27,13 @@ MCP (Model Context Protocol) server providing unified image generation across 9 
 - **Speed**: Moderate-slow (20-40s, polling-based)
 - **Position**: High-quality photorealism specialist
 
-### LEONARDO
+### LEONARDO (Subscription Required)
 - **Best for**: Artistic renders, fantasy art, cinematic compositions, game assets, professional illustrations
 - **Strengths**: Excellent artistic quality across multiple styles, character consistency, creative interpretation
 - **Quality**: Exceptional for artistic and cinematic work
 - **Speed**: Moderate (15-30s, polling-based)
-- **Position**: Underutilized gem - not just for character consistency!
+- **Position**: Artistic specialist (requires monthly subscription beyond API credits)
+- **Note**: Requires active Leonardo.ai subscription in addition to API key
 
 ### GEMINI
 - **Best for**: Multi-image composition, complex context understanding
@@ -47,12 +49,14 @@ MCP (Model Context Protocol) server providing unified image generation across 9 
 - **Speed**: Fast (5-10s)
 - **Position**: Text rendering specialist
 
-### FAL
-- **Best for**: Rapid iterations, drafts, real-time generation
-- **Strengths**: Blazing fast (50-300ms), good quality for speed
-- **Quality**: Good for rapid work
-- **Speed**: Ultra-fast (sub-second to few seconds)
-- **Position**: Speed specialist
+### FAL (FLUX.2 - NEW)
+- **Best for**: High-quality generation with excellent typography, rapid iterations
+- **Strengths**: FLUX.2 models with enhanced text rendering, adjustable steps (10-50), flexible guidance scale
+- **Quality**: Exceptional with FLUX.2 [pro], customizable with FLUX.2 [flex]
+- **Speed**: Fast (2-10s) to ultra-fast (sub-second for legacy models)
+- **Default Model**: `flux-2-pro` (maximum quality, exceptional photorealism)
+- **Available Models**: flux-2-pro, flux-2-flex (better text), flux-realism, flux-pro, fast-sdxl
+- **Position**: Best balance of quality and speed
 
 ### REPLICATE
 - **Best for**: Specific open models, experimentation, cost-sensitive use cases
@@ -67,6 +71,14 @@ MCP (Model Context Protocol) server providing unified image generation across 9 
 - **Quality**: Excellent for post-processing
 - **Speed**: Fast for specialized operations
 - **Position**: NOT in generation fallback - editing operations only
+
+### RECRAFT (Subscription Required)
+- **Best for**: Perfect text rendering, logos, branding, graphic design
+- **Strengths**: #1 globally ranked model (ELO 1172), vector generation support
+- **Quality**: Best-in-class for text-heavy images and typography
+- **Speed**: Fast (5-10s)
+- **Position**: Text rendering champion (requires monthly subscription beyond API credits)
+- **Note**: Requires active Recraft subscription in addition to API key
 
 ## Architecture
 
@@ -238,8 +250,10 @@ await new Promise(r => setTimeout(r, delay + Math.random() * 500));
 ### Provider Selection Optimization
 - Pre-built keyword index for O(n) complexity
 - Cached provider instances (lazy initialization)
-- Fallback chain: OPENAI → STABILITY → BFL → LEONARDO → GEMINI → IDEOGRAM → FAL → REPLICATE
-  - Prioritizes versatility (OPENAI), reliability (STABILITY), quality (BFL), artistic excellence (LEONARDO)
+- **Default Fallback Chain** (code): `RECRAFT → BFL → OPENAI → LEONARDO → IDEOGRAM → STABILITY → GEMINI → FAL → REPLICATE`
+- **Active Fallback Chain** (without subscription providers): `BFL → OPENAI → IDEOGRAM → STABILITY → GEMINI → FAL → REPLICATE`
+  - Prioritizes quality (BFL), versatility (OPENAI), text rendering (IDEOGRAM)
+  - RECRAFT and LEONARDO require monthly subscriptions (skipped if API key not configured)
   - CLIPDROP excluded from generation fallback (post-processing only)
   - MOCK provider excluded from production (dev/test only or ALLOW_MOCK_PROVIDER=true)
 
@@ -349,15 +363,19 @@ headers: {
 ## Environment Variables
 
 ### Required for Each Provider
-- `OPENAI_API_KEY`: sk-... format
+**Credit-Based Providers** (pay per use):
+- `OPENAI_API_KEY`: sk-proj-... format
 - `STABILITY_API_KEY`: sk-... format
-- `LEONARDO_API_KEY`: custom format
 - `IDEOGRAM_API_KEY`: custom format
-- `BFL_API_KEY`: custom format
-- `FAL_API_KEY`: custom format
+- `BFL_API_KEY`: UUID format
+- `FAL_API_KEY`: format with colon separator
 - `CLIPDROP_API_KEY`: custom format
 - `REPLICATE_API_TOKEN`: r8_... format
-- `GEMINI_API_KEY`: AIza... format
+- `GEMINI_API_KEY`: AIza... format (from aistudio.google.com)
+
+**Subscription-Required Providers** (monthly subscription + API):
+- `LEONARDO_API_KEY`: custom format (requires Leonardo.ai subscription)
+- `RECRAFT_API_KEY`: custom format (requires Recraft subscription)
 
 ### Configuration Options
 - `DEFAULT_PROVIDER`: Provider name or "auto" (default: "auto")

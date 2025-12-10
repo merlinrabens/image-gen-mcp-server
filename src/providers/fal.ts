@@ -43,7 +43,7 @@ export class FalProvider extends ImageProvider {
   getCapabilities() {
     return {
       supportsGenerate: true,
-      supportsEdit: false,
+      supportsEdit: true, // FLUX.2 supports editing
       supportsVariations: true,
       supportsUpscale: true,
       supportsControlNet: true,
@@ -51,15 +51,20 @@ export class FalProvider extends ImageProvider {
       supportsCustomModels: false,
       maxWidth: 1536,
       maxHeight: 1536,
-      defaultModel: 'flux-realism', // Changed from fast-sdxl for better quality
+      defaultModel: 'flux-2-pro', // FLUX.2 - Best quality
       availableModels: [
-        'flux-realism', // Photorealistic - RECOMMENDED
-        'flux-pro', // High quality
-        'realvisxl-v4', // Ultra-realistic
+        // FLUX.2 models (NEW - Best quality, better text rendering)
+        'flux-2-pro',      // Maximum quality, exceptional photorealism
+        'flux-2-flex',     // Adjustable steps/guidance, enhanced typography
+        // Legacy FLUX 1.x models (kept for compatibility)
+        'flux-realism',    // Photorealistic
+        'flux-pro',        // High quality
+        // Other models
+        'realvisxl-v4',    // Ultra-realistic
         'stable-diffusion-v3', // Latest SD
-        'animagine-xl', // Anime style
-        'playground-v2', // Creative
-        'fast-sdxl', // 50-100ms generation (lower quality)
+        'animagine-xl',    // Anime style
+        'playground-v2',   // Creative
+        'fast-sdxl',       // 50-100ms generation (lower quality)
         'fast-lightning-sdxl' // Even faster (lowest quality)
       ]
     };
@@ -167,6 +172,10 @@ export class FalProvider extends ImageProvider {
   private getModelEndpoint(modelName?: string): string {
     // Map to Fal.ai model endpoints
     const modelMap: Record<string, string> = {
+      // FLUX.2 models (NEW)
+      'flux-2-pro': 'fal-ai/flux-2-pro',
+      'flux-2-flex': 'fal-ai/flux-2-flex',
+      // Legacy FLUX 1.x models
       'fast-sdxl': 'fal-ai/fast-sdxl',
       'fast-lightning-sdxl': 'fal-ai/fast-lightning-sdxl',
       'flux-pro': 'fal-ai/flux-pro',
@@ -181,15 +190,23 @@ export class FalProvider extends ImageProvider {
       return modelMap[modelName];
     }
 
-    // Default to flux-realism for quality (changed from fast-sdxl)
-    return modelMap['flux-realism'];
+    // Default to flux-2-pro for best quality
+    return modelMap['flux-2-pro'];
   }
 
   private buildRequestBody(input: GenerateInput, model: string) {
+    // Determine default steps based on model type
+    let defaultSteps = 25;
+    if (model.includes('fast')) {
+      defaultSteps = 8;
+    } else if (model.includes('flux-2')) {
+      // FLUX.2 models support adjustable steps (10-50)
+      defaultSteps = 28; // Good balance of quality/speed
+    }
+
     const body: Record<string, any> = {
       prompt: input.prompt,
-      // Increased minimum steps for fast models (8 instead of 4) to prevent tiling artifacts
-      num_inference_steps: input.steps || (model.includes('fast') ? 8 : 25),
+      num_inference_steps: input.steps || defaultSteps,
       guidance_scale: input.guidance || 3.5,
       num_images: 1,
       enable_safety_checker: true,
@@ -199,7 +216,7 @@ export class FalProvider extends ImageProvider {
 
     // Handle dimensions based on model
     if (model.includes('flux')) {
-      // Flux models support flexible dimensions
+      // Flux models (1.x and 2.x) support flexible dimensions
       body.image_size = {
         width: input.width || 1024,
         height: input.height || 1024
@@ -217,6 +234,9 @@ export class FalProvider extends ImageProvider {
     if (model.includes('fast')) {
       body.enable_lcm = true; // Enable LCM for even faster generation
       body.num_inference_steps = Math.min(input.steps || 4, 8); // Max 8 for fast models
+    } else if (model.includes('flux-2-flex')) {
+      // FLUX.2 [flex] supports adjustable steps (10-50) and guidance scale
+      body.num_inference_steps = Math.max(10, Math.min(input.steps || 28, 50));
     }
 
     return body;

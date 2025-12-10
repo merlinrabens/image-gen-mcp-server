@@ -41,7 +41,7 @@ export class OpenAIProvider extends ImageProvider {
       throw new ProviderError('OpenAI API key not configured', this.name);
     }
 
-    const model = input.model || 'dall-e-3';
+    const model = input.model || 'gpt-image-1'; // gpt-image-1 is OpenAI's latest recommended model
     const size = this.mapSize(input.width, input.height);
 
     logger.info(`OpenAI generating image`, { model, size, prompt: input.prompt.slice(0, 50) });
