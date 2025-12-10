@@ -28,14 +28,27 @@ export class ReplicateProvider extends ImageProvider {
   getCapabilities() {
     return {
       supportsGenerate: true,
-      supportsEdit: false, // Most Replicate models don't support direct editing
+      supportsEdit: true, // FLUX.2 models support editing
       maxWidth: 2048,
       maxHeight: 2048,
+      defaultModel: 'black-forest-labs/flux-2-pro',
       supportedModels: [
-        'black-forest-labs/flux-schnell',
-        'black-forest-labs/flux-dev',
-        'stability-ai/sdxl',
-        'lucataco/sdxl-lightning-4step'
+        // FLUX.2 models (Latest - December 2025)
+        'black-forest-labs/flux-2-pro',       // Best quality, 8 reference images - $0.05
+        'black-forest-labs/flux-2-dev',       // Open-weight, reference images - $0.025
+        'black-forest-labs/flux-2-flex',      // Max quality, 10 reference images - $0.05
+        // FLUX 1.x models (Legacy)
+        'black-forest-labs/flux-1.1-pro',     // Fast pro model
+        'black-forest-labs/flux-kontext-pro', // Text-based editing
+        'black-forest-labs/flux-schnell',     // Fast/free tier
+        'black-forest-labs/flux-dev'          // Open-weight 1.x
+      ],
+      specialFeatures: [
+        'multi_reference_images',    // Up to 10 reference images
+        'character_consistency',     // Style/character preservation
+        'text_rendering',           // Enhanced typography
+        'high_resolution',          // Up to 4MP
+        'image_editing'             // Built-in editing capabilities
       ]
     };
   }
@@ -46,8 +59,8 @@ export class ReplicateProvider extends ImageProvider {
       throw new ProviderError('Replicate API token not configured', this.name);
     }
 
-    // Default to flux-schnell for fast generation
-    const model = input.model || 'black-forest-labs/flux-schnell';
+    // Default to FLUX.2 Pro for best quality (December 2025)
+    const model = input.model || 'black-forest-labs/flux-2-pro';
     const width = input.width || 1024;
     const height = input.height || 1024;
 
@@ -111,16 +124,22 @@ export class ReplicateProvider extends ImageProvider {
   private async createPrediction(model: string, input: any, apiToken: string): Promise<any> {
     const controller = this.createTimeout();
 
+    // Check if this is an official model (use model name directly)
+    const version = await this.getModelVersion(model, apiToken);
+
+    // Build request body - official models use 'model', community models use 'version'
+    const requestBody = version
+      ? { version, input }
+      : { model, input };
+
     const { statusCode, body } = await request('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Prefer': 'wait' // Wait for result if fast enough
       },
-      body: JSON.stringify({
-        version: await this.getModelVersion(model, apiToken),
-        input
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
 
@@ -171,11 +190,26 @@ export class ReplicateProvider extends ImageProvider {
    * Get the latest version ID for a model
    */
   private async getModelVersion(model: string, apiToken: string): Promise<string> {
-    // Hardcoded versions for common models to avoid extra API calls
-    // Updated 2025-09-29 via fetch-replicate-versions.js
+    // For official models (black-forest-labs/*), use the model name directly
+    // Replicate handles version resolution automatically for official models
+    // For community models, we fetch the latest version dynamically
+    const officialModels = [
+      'black-forest-labs/flux-2-pro',
+      'black-forest-labs/flux-2-dev',
+      'black-forest-labs/flux-2-flex',
+      'black-forest-labs/flux-1.1-pro',
+      'black-forest-labs/flux-kontext-pro',
+      'black-forest-labs/flux-schnell',
+      'black-forest-labs/flux-dev'
+    ];
+
+    // If it's an official model, return undefined to use model name directly
+    if (officialModels.includes(model)) {
+      return undefined as any; // Will trigger model-based prediction
+    }
+
+    // Legacy hardcoded versions for community models
     const knownVersions: Record<string, string> = {
-      'black-forest-labs/flux-schnell': 'c846a69991daf4c0e5d016514849d14ee5b2e6846ce6b9d6f21369e564cfe51e',
-      'black-forest-labs/flux-dev': '6e4a938f85952bdabcc15aa329178c4d681c52bf25a0342403287dc26944661d',
       'stability-ai/sdxl': '7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc',
       'lucataco/sdxl-lightning-4step': '6f7a773af6fc3e8de9d5a3c00be77c17308914bf67772726aff83496ba1e3bbe'
     };

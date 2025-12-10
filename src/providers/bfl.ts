@@ -30,21 +30,30 @@ export class BFLProvider extends ImageProvider {
   getCapabilities() {
     return {
       supportsGenerate: true,
-      supportsEdit: true, // Via Flux Fill
+      supportsEdit: true, // Via Flux Kontext and Flux Fill
       maxWidth: 2048,
       maxHeight: 2048,
+      defaultModel: 'flux-2-pro',
       supportedModels: [
-        'flux1.1-pro', // Standard pro model - $0.04
-        'flux1.1-pro-ultra', // Ultra high-res (4MP) - $0.06
-        'flux-kontext-pro', // Create and edit with text+images - $0.04
-        'flux-fill-pro' // Inpainting model - $0.05
+        // FLUX.2 models (Latest - November 2025)
+        'flux-2-pro',         // State-of-the-art quality, 8 reference images - fastest
+        'flux-2-flex',        // Configurable steps/guidance, 10 reference images, best text
+        // FLUX 1.x models (Legacy but still supported)
+        'flux1.1-pro',        // Standard pro model - $0.04
+        'flux1.1-pro-ultra',  // Ultra high-res (4MP) - $0.06
+        'flux-kontext-pro',   // Create and edit with text+images - $0.04
+        'flux-kontext-max',   // Premium editing with typography - $0.08
+        'flux-fill-pro'       // Inpainting model - $0.05
       ],
       specialFeatures: [
-        'photorealistic',
-        'ultra_high_resolution',
-        'raw_photography',
-        'inpainting',
-        'aspect_ratio_control'
+        'multi_reference_images',  // Up to 10 reference images (FLUX.2)
+        'character_consistency',   // Style/character preservation
+        'text_rendering',         // Enhanced typography (FLUX.2 flex)
+        'photorealistic',         // Ultra-high quality
+        'ultra_high_resolution',  // Up to 4MP
+        'raw_photography',        // Natural photo style
+        'inpainting',            // Mask-based editing
+        'aspect_ratio_control'   // Flexible aspect ratios
       ]
     };
   }
@@ -67,8 +76,8 @@ export class BFLProvider extends ImageProvider {
     const cached = this.getCachedResult(cacheKey);
     if (cached) return cached;
 
-    // Select appropriate model based on request
-    const model = input.model || this.selectBestModel(input.prompt, input.width, input.height);
+    // Select appropriate model based on request (default to FLUX.2 Pro - December 2025)
+    const model = input.model || 'flux-2-pro';
 
     logger.info(`BFL generating image`, { model, prompt: input.prompt.slice(0, 50) });
 
@@ -269,39 +278,22 @@ export class BFLProvider extends ImageProvider {
   }
 
   /**
-   * Select the best model based on the request
-   */
-  private selectBestModel(prompt: string, width?: number, height?: number): string {
-    const requestedSize = (width || 1024) * (height || 1024);
-    const lowerPrompt = prompt.toLowerCase();
-
-    // Use ultra for high-resolution requests (>1MP)
-    if (requestedSize > 1024 * 1024) {
-      return 'flux1.1-pro-ultra';
-    }
-
-    // Use kontext for character consistency or multi-image scenarios
-    if (lowerPrompt.includes('character') || lowerPrompt.includes('consistent') ||
-        lowerPrompt.includes('same person') || lowerPrompt.includes('series')) {
-      return 'flux-kontext-pro';
-    }
-
-    // Default to standard pro model - fast and reliable
-    return 'flux1.1-pro';
-  }
-
-  /**
    * Get API endpoint for model
    */
   private getEndpointForModel(model: string): string {
     const endpoints: Record<string, string> = {
+      // FLUX.2 models
+      'flux-2-pro': 'v1/flux-2-pro',
+      'flux-2-flex': 'v1/flux-2-flex',
+      // FLUX 1.x models
       'flux1.1-pro': 'v1/flux-pro-1.1',
       'flux1.1-pro-ultra': 'v1/flux-pro-1.1-ultra',
       'flux-kontext-pro': 'v1/flux-kontext-pro',
+      'flux-kontext-max': 'v1/flux-kontext-max',
       'flux-fill-pro': 'v1/flux-fill'
     };
 
-    return endpoints[model] || 'v1/flux-pro-1.1';
+    return endpoints[model] || 'v1/flux-2-pro';
   }
 
   /**

@@ -29,12 +29,27 @@ export class GeminiProvider extends ImageProvider {
   getCapabilities() {
     return {
       supportsGenerate: true,
-      supportsEdit: true, // Gemini 2.5 Flash Image supports advanced editing
-      maxWidth: 3072,
-      maxHeight: 3072,
+      supportsEdit: true, // Gemini and Imagen support editing
+      maxWidth: 2048, // Imagen 4 supports up to 2K
+      maxHeight: 2048,
+      defaultModel: 'imagen-4.0-generate-001',
       supportedModels: [
-        'gemini-2.5-flash-image-preview', // Primary image generation model (aka nano-banana)
-        'gemini-2.0-flash-exp' // Experimental version (deprecated Oct 2025)
+        // Imagen 4 models (Latest - December 2025)
+        'imagen-4.0-generate-001',       // Standard - best balance of quality/speed
+        'imagen-4.0-ultra-generate-001', // Ultra quality - highest fidelity
+        'imagen-4.0-fast-generate-001',  // Fast - optimized for speed
+        // Imagen 3 (Legacy)
+        'imagen-3.0-generate-002',       // Previous generation
+        // Gemini multimodal (for editing)
+        'gemini-2.5-flash-image-preview' // Multimodal editing
+      ],
+      supportedAspectRatios: ['1:1', '3:4', '4:3', '9:16', '16:9'],
+      supportedSizes: ['1K', '2K'], // For Ultra/Standard models
+      specialFeatures: [
+        'text_rendering',        // Good text generation
+        'synthid_watermark',     // All images watermarked
+        'person_generation',     // Configurable person generation
+        'multiple_images'        // Generate 1-4 images per request
       ]
     };
   }
@@ -45,97 +60,22 @@ export class GeminiProvider extends ImageProvider {
       throw new ProviderError('Gemini API key not configured', this.name);
     }
 
-    const model = input.model || 'gemini-2.5-flash-image-preview';
+    // Default to Imagen 4 for generation (December 2025)
+    const model = input.model || 'imagen-4.0-generate-001';
+    const isImagen = model.startsWith('imagen-');
 
-    logger.info(`Gemini generating image`, { model, prompt: input.prompt.slice(0, 50) });
+    logger.info(`Gemini generating image`, { model, isImagen, prompt: input.prompt.slice(0, 50) });
 
     try {
-      const controller = this.createTimeout(60000); // Gemini can be slower
+      const controller = this.createTimeout(60000);
 
-      // Build request for Gemini 2.5 Flash Image
-      // The model expects natural language prompts, not keywords
-      const requestBody = {
-        contents: [{
-          parts: [{
-            text: input.prompt // Direct prompt without prefix
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.8,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192
-          // aspectRatio parameter removed - not supported in current API version
-        }
-      };
-
-      logger.info(`Requesting Gemini image (1:1 output, aspect ratio control not available)`);
-
-      const { statusCode, body } = await request(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal
-        }
-      );
-
-      const response = await body.json() as any;
-
-      if (statusCode !== 200) {
-        const message = response.error?.message || `Gemini API error: ${statusCode}`;
-        const isRetryable = statusCode >= 500 || statusCode === 429;
-        throw new ProviderError(message, this.name, isRetryable, response);
+      if (isImagen) {
+        // Use Imagen API (predict endpoint)
+        return await this.generateWithImagen(input, model, apiKey, controller);
+      } else {
+        // Use Gemini multimodal API (generateContent endpoint)
+        return await this.generateWithGemini(input, model, apiKey, controller);
       }
-
-      // Extract image from response
-      const candidates = response.candidates?.[0];
-      const content = candidates?.content;
-      const parts = content?.parts;
-
-      if (!parts || parts.length === 0) {
-        throw new ProviderError('No image generated in response', this.name, false);
-      }
-
-      // Look for image data in the response
-      const images: Array<{ dataUrl: string; format: 'png' | 'jpg' | 'jpeg' | 'webp' }> = [];
-
-      for (const part of parts) {
-        if (part.inlineData) {
-          const mimeType = part.inlineData.mimeType || 'image/png';
-          const format = this.extractFormat(mimeType);
-          const dataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
-          images.push({ dataUrl, format });
-        } else if (part.fileData) {
-          // Handle file-based responses if applicable
-          logger.warn('File-based image response not yet implemented', { fileUri: part.fileData.fileUri });
-        }
-      }
-
-      if (images.length === 0) {
-        // If no images in response, it might be text describing the limitation
-        const textResponse = parts.find((p: any) => p.text)?.text;
-        logger.warn('Gemini returned text instead of image', { response: textResponse });
-
-        throw new ProviderError(
-          textResponse || 'Gemini 2.5 Flash Image requires pay-as-you-go Blaze pricing plan',
-          this.name,
-          false
-        );
-      }
-
-      return {
-        images,
-        provider: this.name,
-        model,
-        warnings: [
-          'All Gemini images include a SynthID watermark',
-          'Gemini currently only supports 1:1 (square) aspect ratio'
-        ]
-      };
     } catch (error) {
       if (error instanceof ProviderError) throw error;
 
@@ -143,6 +83,179 @@ export class GeminiProvider extends ImageProvider {
       const isRetryable = message.includes('timeout') || message.includes('ECONNREFUSED');
       throw new ProviderError(`Gemini request failed: ${message}`, this.name, isRetryable, error);
     }
+  }
+
+  /**
+   * Generate with Imagen 4 API
+   */
+  private async generateWithImagen(
+    input: GenerateInput,
+    model: string,
+    apiKey: string,
+    controller: AbortController
+  ): Promise<ProviderResult> {
+    // Calculate aspect ratio from dimensions
+    const aspectRatio = this.calculateAspectRatio(input.width || 1024, input.height || 1024);
+
+    const requestBody = {
+      instances: [{
+        prompt: input.prompt
+      }],
+      parameters: {
+        sampleCount: 1,
+        aspectRatio,
+        // personGeneration: 'allow_adult' // Default
+      }
+    };
+
+    const { statusCode, body } = await request(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      }
+    );
+
+    const response = await body.json() as any;
+
+    if (statusCode !== 200) {
+      const message = response.error?.message || `Imagen API error: ${statusCode}`;
+      const isRetryable = statusCode >= 500 || statusCode === 429;
+      throw new ProviderError(message, this.name, isRetryable, response);
+    }
+
+    // Extract images from Imagen response
+    const predictions = response.predictions || [];
+    const images: Array<{ dataUrl: string; format: 'png' | 'jpg' | 'jpeg' | 'webp' }> = [];
+
+    for (const prediction of predictions) {
+      if (prediction.bytesBase64Encoded) {
+        const mimeType = prediction.mimeType || 'image/png';
+        const format = this.extractFormat(mimeType);
+        const dataUrl = `data:${mimeType};base64,${prediction.bytesBase64Encoded}`;
+        images.push({ dataUrl, format });
+      }
+    }
+
+    if (images.length === 0) {
+      throw new ProviderError('No image generated by Imagen', this.name, false);
+    }
+
+    return {
+      images,
+      provider: this.name,
+      model,
+      warnings: ['All Imagen images include a SynthID watermark']
+    };
+  }
+
+  /**
+   * Generate with Gemini multimodal API (legacy)
+   */
+  private async generateWithGemini(
+    input: GenerateInput,
+    model: string,
+    apiKey: string,
+    controller: AbortController
+  ): Promise<ProviderResult> {
+    const requestBody = {
+      contents: [{
+        parts: [{
+          text: input.prompt
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.8,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 8192
+      }
+    };
+
+    logger.info(`Requesting Gemini image (1:1 output)`);
+
+    const { statusCode, body } = await request(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      }
+    );
+
+    const response = await body.json() as any;
+
+    if (statusCode !== 200) {
+      const message = response.error?.message || `Gemini API error: ${statusCode}`;
+      const isRetryable = statusCode >= 500 || statusCode === 429;
+      throw new ProviderError(message, this.name, isRetryable, response);
+    }
+
+    // Extract image from response
+    const candidates = response.candidates?.[0];
+    const content = candidates?.content;
+    const parts = content?.parts;
+
+    if (!parts || parts.length === 0) {
+      throw new ProviderError('No image generated in response', this.name, false);
+    }
+
+    const images: Array<{ dataUrl: string; format: 'png' | 'jpg' | 'jpeg' | 'webp' }> = [];
+
+    for (const part of parts) {
+      if (part.inlineData) {
+        const mimeType = part.inlineData.mimeType || 'image/png';
+        const format = this.extractFormat(mimeType);
+        const dataUrl = `data:${mimeType};base64,${part.inlineData.data}`;
+        images.push({ dataUrl, format });
+      }
+    }
+
+    if (images.length === 0) {
+      const textResponse = parts.find((p: any) => p.text)?.text;
+      throw new ProviderError(
+        textResponse || 'Gemini did not return an image',
+        this.name,
+        false
+      );
+    }
+
+    return {
+      images,
+      provider: this.name,
+      model,
+      warnings: [
+        'All Gemini images include a SynthID watermark',
+        'Gemini multimodal currently only supports 1:1 aspect ratio'
+      ]
+    };
+  }
+
+  /**
+   * Calculate aspect ratio string from dimensions
+   */
+  private calculateAspectRatio(width: number, height: number): string {
+    const ratio = width / height;
+
+    if (Math.abs(ratio - 1) < 0.1) return '1:1';
+    if (Math.abs(ratio - 4/3) < 0.1) return '4:3';
+    if (Math.abs(ratio - 3/4) < 0.1) return '3:4';
+    if (Math.abs(ratio - 16/9) < 0.1) return '16:9';
+    if (Math.abs(ratio - 9/16) < 0.1) return '9:16';
+
+    // Default to closest standard
+    if (ratio > 1.5) return '16:9';
+    if (ratio < 0.7) return '9:16';
+    if (ratio > 1) return '4:3';
+    if (ratio < 1) return '3:4';
+    return '1:1';
   }
 
   async edit(input: EditInput): Promise<ProviderResult> {

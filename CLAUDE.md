@@ -5,12 +5,15 @@ MCP (Model Context Protocol) server providing unified image generation across 9 
 
 ## Provider Strengths & Positioning (December 2025)
 
-### OPENAI (gpt-image-1 - Default)
+### OPENAI (gpt-image-1)
 - **Best for**: Versatile general-purpose generation, creative interpretation, text rendering
 - **Strengths**: Superior instruction following, exceptional text rendering, detailed editing, world knowledge
 - **Quality**: Highest quality, consistent across use cases
 - **Speed**: Moderate (10-30s)
-- **Default Model**: `gpt-image-1` (OpenAI's latest recommended model)
+- **Default Model**: `gpt-image-1` (OpenAI's latest, recommended)
+- **Available Models**: gpt-image-1, dall-e-3, dall-e-2
+- **Dimensions**: 1024x1024, 1536x1024, 1024x1536; quality: low/medium/high/auto
+- **Capabilities**: Generate, Edit, Variations (DALL-E 2), Streaming, Transparency
 - **Position**: Primary fallback - most versatile and reliable
 
 ### STABILITY (Stable Diffusion XL)
@@ -20,11 +23,14 @@ MCP (Model Context Protocol) server providing unified image generation across 9 
 - **Speed**: Fast-moderate (5-15s)
 - **Position**: Secondary fallback - reliable workhorse
 
-### BFL (Black Forest Labs / Flux)
-- **Best for**: Ultra-high resolution, professional photography, product shots
-- **Strengths**: State-of-the-art photorealism, fine detail, texture quality
+### BFL (Black Forest Labs / FLUX.2)
+- **Best for**: Ultra-high resolution, professional photography, product shots, multi-reference editing
+- **Strengths**: State-of-the-art photorealism, fine detail, texture quality, up to 10 reference images
 - **Quality**: Exceptional for photorealistic work
-- **Speed**: Moderate-slow (20-40s, polling-based)
+- **Speed**: Fast (5-15s) to moderate (20-40s for ultra)
+- **Default Model**: `flux-2-pro` (state-of-the-art quality, 8 reference images)
+- **Available Models**: flux-2-pro, flux-2-flex (configurable steps, best text), flux1.1-pro, flux1.1-pro-ultra (4MP)
+- **Dimensions**: Up to 2048x2048, flexible aspect ratios (3:7 to 7:3)
 - **Position**: High-quality photorealism specialist
 
 ### LEONARDO (Subscription Required)
@@ -35,18 +41,24 @@ MCP (Model Context Protocol) server providing unified image generation across 9 
 - **Position**: Artistic specialist (requires monthly subscription beyond API credits)
 - **Note**: Requires active Leonardo.ai subscription in addition to API key
 
-### GEMINI
-- **Best for**: Multi-image composition, complex context understanding
-- **Strengths**: Unique multimodal capability (multiple image inputs), Google infrastructure reliability
-- **Quality**: Good general quality
+### GEMINI (Imagen 4)
+- **Best for**: High-fidelity image generation, multi-image composition, complex context understanding
+- **Strengths**: Imagen 4 models, unique multimodal capability, Google infrastructure reliability
+- **Quality**: High (Imagen 4), good general quality
 - **Speed**: Fast-moderate (5-20s)
-- **Position**: Unique for multi-image workflows
+- **Default Model**: `imagen-4.0-generate-001` (best balance of quality/speed)
+- **Available Models**: imagen-4.0-generate-001, imagen-4.0-ultra-generate-001, imagen-4.0-fast-generate-001, gemini-2.5-flash-image-preview
+- **Dimensions**: Up to 2048x2048 (2K), aspect ratios: 1:1, 3:4, 4:3, 9:16, 16:9
+- **Note**: All images include SynthID watermark
+- **Position**: High-quality generation + unique multi-image workflows
 
-### IDEOGRAM
-- **Best for**: Text rendering, logos, posters, typography, marketing materials
-- **Strengths**: Industry-leading text-in-image quality, clean outputs
+### IDEOGRAM (V3)
+- **Best for**: Text rendering, logos, posters, typography, marketing materials, style presets
+- **Strengths**: Industry-leading text-in-image quality, clean outputs, character reference support, 50+ style presets
 - **Quality**: Excellent for text-heavy work
 - **Speed**: Fast (5-10s)
+- **Default Model**: `V_3` (latest with style presets and character reference)
+- **Capabilities**: Generate, Remix, Edit, Reframe, Replace Background, Face Swapping
 - **Position**: Text rendering specialist
 
 ### FAL (FLUX.2 - NEW)
@@ -58,12 +70,15 @@ MCP (Model Context Protocol) server providing unified image generation across 9 
 - **Available Models**: flux-2-pro, flux-2-flex (better text), flux-realism, flux-pro, fast-sdxl
 - **Position**: Best balance of quality and speed
 
-### REPLICATE
-- **Best for**: Specific open models, experimentation, cost-sensitive use cases
-- **Strengths**: Access to many open-source models, community-driven
-- **Quality**: Variable (depends on model selection)
-- **Speed**: Variable (depends on model)
-- **Position**: Fallback for open model access
+### REPLICATE (FLUX.2)
+- **Best for**: High-quality generation via FLUX.2 models, specific open models, experimentation
+- **Strengths**: Access to FLUX.2 (state-of-the-art), many open-source models, community-driven
+- **Quality**: Exceptional with FLUX.2 Pro/Flex, variable with other models
+- **Speed**: Fast (5-15s for FLUX.2)
+- **Default Model**: `black-forest-labs/flux-2-pro` (state-of-the-art quality)
+- **Available Models**: flux-2-pro, flux-2-dev, flux-2-flex, flux-1.1-pro, flux-kontext-pro, flux-schnell
+- **Dimensions**: Up to 2048x2048
+- **Position**: FLUX.2 access + open model fallback
 
 ### CLIPDROP
 - **Best for**: Post-processing only (background removal, enhancement, upscaling)
