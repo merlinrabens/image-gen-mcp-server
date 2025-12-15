@@ -8,6 +8,26 @@
   AI-powered image generation CLI and Claude Code plugin with multi-provider support.
 </p>
 
+## Showcase
+
+<p align="center">
+  <a href="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/hero-image.webp">
+    <img src="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/hero-image.webp" alt="Hero Image" width="600">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/artistic-render.webp">
+    <img src="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/artistic-render.webp" alt="Artistic" width="180">
+  </a>
+  <a href="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/icon-logo.webp">
+    <img src="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/icon-logo.webp" alt="Logo" width="180">
+  </a>
+  <a href="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/product-mockup.webp">
+    <img src="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/product-mockup.webp" alt="Product" width="180">
+  </a>
+</p>
+
 ## Features
 
 - **10 AI Providers**: OpenAI, Stability, BFL FLUX, Ideogram, FAL, Gemini, Replicate, Clipdrop, Leonardo, Recraft
