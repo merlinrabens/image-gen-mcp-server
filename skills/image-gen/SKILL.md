@@ -48,14 +48,20 @@ For detailed provider capabilities, see [references/providers.md](references/pro
 
 ## Environment Setup
 
-Requires API keys as environment variables. At minimum, set one of:
-- `OPENAI_API_KEY`
-- `STABILITY_API_KEY`
-- `BFL_API_KEY`
-- `IDEOGRAM_API_KEY`
-- `FAL_API_KEY`
-- `GEMINI_API_KEY`
-- `REPLICATE_API_TOKEN`
+Add at least one API key to your shell profile (`~/.zshrc` or `~/.bashrc`):
+
+```bash
+# Add to ~/.zshrc (or ~/.bashrc)
+export OPENAI_API_KEY="sk-..."       # For DALL-E
+export BFL_API_KEY="..."             # For FLUX (recommended for quality)
+export IDEOGRAM_API_KEY="..."        # For text/logos (best typography)
+export GEMINI_API_KEY="..."          # For Google Imagen
+export STABILITY_API_KEY="..."       # For Stable Diffusion
+export FAL_API_KEY="..."             # For fast iterations
+export REPLICATE_API_TOKEN="..."     # For various models
+```
+
+After adding, run `source ~/.zshrc` or restart your terminal.
 
 ## Example Workflows
 
