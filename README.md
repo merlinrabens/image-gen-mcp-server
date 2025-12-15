@@ -1,6 +1,12 @@
-# Image Gen
+<p align="center">
+  <img src="logo.png" alt="image-gen" width="180">
+</p>
 
-AI-powered image generation CLI and Claude Code plugin with multi-provider support.
+<h1 align="center">Image Gen</h1>
+
+<p align="center">
+  AI-powered image generation CLI and Claude Code plugin with multi-provider support.
+</p>
 
 ## Features
 

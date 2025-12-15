@@ -3,9 +3,9 @@ node_modules/
 
 # Build output (dist/ intentionally NOT ignored - ships with plugin for zero-build install)
 
-# Environment files
-.env
-.env.local
+# Environment files (ignore all except .env.example)
+.env*
+!.env.example
 
 # IDE
 .vscode/
