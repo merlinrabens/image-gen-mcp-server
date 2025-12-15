@@ -1,6 +1,6 @@
 {
   "name": "image-gen",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "AI-powered image generation CLI with multi-provider support",
   "main": "dist/cli.js",
   "bin": {
