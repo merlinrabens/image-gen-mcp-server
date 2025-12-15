@@ -10,11 +10,14 @@
     :root {
       --gold: #d4a853;
       --gold-light: #e8c476;
-      --navy: #1a1f36;
-      --navy-light: #252b47;
+      --gold-glow: rgba(212, 168, 83, 0.4);
+      --navy: #0a0a12;
+      --navy-light: #12121f;
+      --navy-mid: #1a1a2e;
       --white: #ffffff;
       --gray-100: #f7f8fa;
       --gray-200: #e8eaef;
+      --gray-400: #9ca3af;
       --gray-600: #6b7280;
     }
 
@@ -24,17 +27,88 @@
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: var(--navy);
+      background:
+        linear-gradient(to bottom, rgba(10, 10, 18, 0.95) 0%, rgba(18, 18, 31, 0.9) 50%, rgba(26, 26, 46, 0.95) 100%),
+        radial-gradient(ellipse at 30% 20%, rgba(212, 168, 83, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(212, 168, 83, 0.05) 0%, transparent 50%);
+      background-attachment: fixed;
       color: var(--white);
       line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      z-index: 1000;
     }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 24px;
+    }
+
+    /* Glassmorphism */
+    .glass {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-card:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(212, 168, 83, 0.3);
+      transform: translateY(-6px);
+      box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 60px -20px var(--gold-glow);
+    }
+
+    /* Gradient border animation */
+    .gradient-border {
+      position: relative;
+    }
+
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light), #ffffff40, var(--gold));
+      background-size: 300% 300%;
+      animation: gradient-rotate 6s linear infinite;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .gradient-border:hover::before {
+      opacity: 1;
     }
 
     /* Header */
@@ -44,9 +118,14 @@
       top: 0;
       left: 0;
       right: 0;
-      background: rgba(26, 31, 54, 0.95);
-      backdrop-filter: blur(10px);
       z-index: 100;
+      transition: all 0.3s;
+    }
+
+    header.scrolled {
+      background: rgba(10, 10, 18, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(212, 168, 83, 0.1);
     }
 
@@ -64,290 +143,439 @@
       font-size: 1.25rem;
       color: var(--white);
       text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .logo:hover {
+      color: var(--gold);
     }
 
     .logo img {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      transition: transform 0.3s;
+    }
+
+    .logo:hover img {
+      transform: scale(1.1) rotate(-5deg);
     }
 
     .nav-links {
       display: flex;
-      gap: 32px;
+      gap: 36px;
       list-style: none;
     }
 
     .nav-links a {
-      color: var(--gray-200);
+      color: var(--gray-400);
       text-decoration: none;
       font-size: 0.95rem;
-      transition: color 0.2s;
+      font-weight: 500;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--gold);
+      transition: width 0.3s;
     }
 
     .nav-links a:hover {
       color: var(--gold);
     }
 
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* Buttons */
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 12px 24px;
-      border-radius: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
       font-weight: 600;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       border: none;
       font-size: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .btn:hover::before {
+      transform: translateX(100%);
     }
 
     .btn-primary {
       background: linear-gradient(135deg, var(--gold), var(--gold-light));
       color: var(--navy);
+      animation: button-pulse 3s ease-in-out infinite;
     }
 
     .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(212, 168, 83, 0.3);
+      animation: none;
+      transform: translateY(-3px) scale(1.02);
+      box-shadow:
+        0 20px 40px -10px rgba(212, 168, 83, 0.4),
+        0 0 30px var(--gold-glow);
     }
 
     .btn-secondary {
       background: transparent;
       color: var(--white);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .btn-secondary:hover {
       border-color: var(--gold);
       color: var(--gold);
+      background: rgba(212, 168, 83, 0.05);
     }
 
     /* Hero */
     .hero {
-      padding: 160px 0 100px;
-      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 0 80px;
       position: relative;
       overflow: hidden;
     }
 
-    .hero::before {
-      content: '';
+    .hero-content {
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Floating orbs */
+    .orb {
       position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, rgba(212, 168, 83, 0.1) 0%, transparent 70%);
-      pointer-events: none;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      animation: float-slow 20s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+      top: 10%;
+      left: 20%;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(212, 168, 83, 0.2) 0%, transparent 70%);
+      bottom: 20%;
+      right: 15%;
+      animation-delay: -7s;
     }
 
     .hero h1 {
-      font-size: 4rem;
+      font-size: clamp(2.5rem, 8vw, 5rem);
       font-weight: 800;
       margin-bottom: 24px;
-      background: linear-gradient(135deg, var(--white) 30%, var(--gold));
+      line-height: 1.1;
+      animation: fade-in-up 1s ease-out;
+    }
+
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, var(--white) 0%, var(--gold) 50%, var(--gold-light) 100%);
+      background-size: 200% 200%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      animation: gradient-shift 5s ease-in-out infinite;
     }
 
     .hero p {
-      font-size: 1.35rem;
-      color: var(--gray-200);
-      max-width: 600px;
-      margin: 0 auto 40px;
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      color: var(--gray-400);
+      max-width: 650px;
+      margin: 0 auto 48px;
+      animation: fade-in-up 1s ease-out 0.2s backwards;
     }
 
     .hero-buttons {
       display: flex;
-      gap: 16px;
+      gap: 20px;
       justify-content: center;
-      margin-bottom: 60px;
+      margin-bottom: 80px;
+      animation: fade-in-up 1s ease-out 0.4s backwards;
     }
 
     /* Showcase */
     .showcase {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      max-width: 900px;
+      max-width: 1000px;
       margin: 0 auto;
+      animation: scale-in 1s ease-out 0.6s backwards;
     }
 
     .showcase-main {
-      border-radius: 16px;
+      border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .showcase-main::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      padding: 2px;
+      background: linear-gradient(135deg, var(--gold), transparent, var(--gold));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
     }
 
     .showcase-main img {
       width: 100%;
       display: block;
+      border-radius: 18px;
     }
 
     .showcase-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      gap: 20px;
     }
 
     .showcase-item {
-      border-radius: 12px;
+      border-radius: 16px;
       overflow: hidden;
-      transition: transform 0.3s;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .showcase-item::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10, 10, 18, 0.6), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
 
     .showcase-item:hover {
-      transform: scale(1.05);
+      transform: scale(1.08) translateY(-8px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+
+    .showcase-item:hover::after {
+      opacity: 1;
     }
 
     .showcase-item img {
       width: 100%;
-      height: 200px;
+      height: 220px;
       object-fit: cover;
       display: block;
     }
 
-    /* Providers */
-    .providers {
+    /* Sections */
+    section {
       padding: 120px 0;
-      background: var(--navy-light);
+      position: relative;
     }
 
     .section-title {
       text-align: center;
-      font-size: 2.5rem;
+      font-size: clamp(2rem, 5vw, 3rem);
       font-weight: 700;
       margin-bottom: 16px;
     }
 
     .section-subtitle {
       text-align: center;
-      color: var(--gray-200);
-      font-size: 1.1rem;
-      margin-bottom: 60px;
+      color: var(--gray-400);
+      font-size: 1.15rem;
+      margin-bottom: 72px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Providers */
+    .providers {
+      background: linear-gradient(180deg, transparent 0%, rgba(212, 168, 83, 0.02) 50%, transparent 100%);
     }
 
     .provider-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 24px;
     }
 
     .provider-card {
-      background: var(--navy);
-      border-radius: 16px;
-      padding: 32px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.3s;
-    }
-
-    .provider-card:hover {
-      border-color: var(--gold);
-      transform: translateY(-4px);
+      padding: 36px;
+      border-radius: 20px;
     }
 
     .provider-name {
-      font-size: 1.25rem;
+      font-size: 1.3rem;
       font-weight: 700;
-      margin-bottom: 8px;
-      color: var(--gold);
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .provider-strength {
-      color: var(--gray-200);
+      color: var(--gray-400);
       font-size: 0.95rem;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+      line-height: 1.6;
     }
 
     .provider-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
     }
 
     .tag {
-      background: rgba(212, 168, 83, 0.1);
+      background: rgba(212, 168, 83, 0.08);
       color: var(--gold-light);
-      padding: 4px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
       font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid rgba(212, 168, 83, 0.15);
+      transition: all 0.3s;
+    }
+
+    .provider-card:hover .tag {
+      background: rgba(212, 168, 83, 0.12);
+      border-color: rgba(212, 168, 83, 0.3);
     }
 
     /* Features */
-    .features {
-      padding: 120px 0;
-    }
-
     .feature-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
       gap: 40px;
     }
 
+    .feature {
+      padding: 40px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      transition: all 0.4s;
+    }
+
+    .feature:hover {
+      border-color: rgba(212, 168, 83, 0.2);
+      background: rgba(212, 168, 83, 0.02);
+    }
+
     .feature-icon {
-      width: 56px;
-      height: 56px;
+      width: 64px;
+      height: 64px;
       background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      border-radius: 12px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
-      margin-bottom: 20px;
+      font-size: 1.75rem;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .feature-icon::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+      border-radius: 50%;
+      z-index: -1;
+      opacity: 0.5;
+      animation: pulse-glow 3s ease-in-out infinite;
     }
 
     .feature h3 {
-      font-size: 1.35rem;
-      margin-bottom: 12px;
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+      font-weight: 600;
     }
 
     .feature p {
-      color: var(--gray-200);
+      color: var(--gray-400);
+      line-height: 1.7;
     }
 
     /* Install */
     .install {
-      padding: 120px 0;
-      background: var(--navy-light);
+      background: linear-gradient(180deg, transparent 0%, rgba(212, 168, 83, 0.02) 50%, transparent 100%);
     }
 
     .code-block {
-      background: #0d1117;
-      border-radius: 12px;
-      padding: 24px 32px;
-      font-family: 'SF Mono', Monaco, monospace;
-      font-size: 1rem;
-      max-width: 700px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 16px;
+      padding: 32px 40px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.95rem;
+      max-width: 750px;
       margin: 0 auto;
       overflow-x: auto;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .code-block::before {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff5f56;
+      box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27ca40;
     }
 
     .code-block code {
       color: var(--gray-200);
+      display: block;
+      padding-top: 20px;
     }
 
-    .code-block .comment {
-      color: #6a737d;
-    }
-
-    .code-block .command {
-      color: #79c0ff;
-    }
-
-    .code-block .string {
-      color: #a5d6ff;
-    }
+    .code-block .comment { color: #6a737d; }
+    .code-block .command { color: var(--gold-light); }
+    .code-block .string { color: #a5d6ff; }
 
     /* Footer */
     footer {
       padding: 60px 0;
       text-align: center;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
     }
 
     footer p {
@@ -357,25 +585,91 @@
     footer a {
       color: var(--gold);
       text-decoration: none;
+      transition: opacity 0.3s;
+    }
+
+    footer a:hover {
+      opacity: 0.8;
+    }
+
+    /* Animations */
+    @keyframes gradient-rotate {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @keyframes float-slow {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -30px) scale(1.05); }
+      50% { transform: translate(-20px, -50px) scale(0.95); }
+      75% { transform: translate(-40px, -20px) scale(1.02); }
+    }
+
+    @keyframes fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes scale-in {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.15); }
+    }
+
+    @keyframes button-pulse {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(212, 168, 83, 0.2);
+      }
+      50% {
+        box-shadow:
+          0 0 30px rgba(212, 168, 83, 0.4),
+          0 0 60px rgba(212, 168, 83, 0.2);
+      }
+    }
+
+    /* Scroll animations */
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .animate-on-scroll.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     /* Responsive */
     @media (max-width: 768px) {
-      .hero h1 {
-        font-size: 2.5rem;
-      }
-
-      .hero p {
-        font-size: 1.1rem;
+      .nav-links {
+        display: none;
       }
 
       .hero-buttons {
         flex-direction: column;
         align-items: center;
-      }
-
-      .nav-links {
-        display: none;
       }
 
       .showcase-grid {
@@ -385,11 +679,21 @@
       .showcase-item img {
         height: auto;
       }
+
+      .feature-grid,
+      .provider-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .code-block {
+        padding: 24px 20px;
+        font-size: 0.85rem;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
+  <header id="header">
     <div class="container">
       <nav>
         <a href="#" class="logo">
@@ -408,15 +712,20 @@
 
   <main>
     <section class="hero">
-      <div class="container">
-        <h1>AI Image Generation,<br>Unified</h1>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="container hero-content">
+        <h1>
+          <span class="gradient-text">AI Image Generation,</span><br>
+          Unified
+        </h1>
         <p>Generate stunning images with 10 AI providers through a single CLI. Intelligent selection, automatic fallbacks, enterprise-grade reliability.</p>
         <div class="hero-buttons">
           <a href="#install" class="btn btn-primary">Get Started</a>
           <a href="https://github.com/shipdeckai/image-gen" class="btn btn-secondary">View on GitHub</a>
         </div>
         <div class="showcase">
-          <div class="showcase-main">
+          <div class="showcase-main glass">
             <img src="https://github.com/shipdeckai/image-gen/releases/download/showcase-v1/hero-image.webp" alt="AI Generated Image">
           </div>
           <div class="showcase-grid">
@@ -436,91 +745,91 @@
 
     <section class="providers" id="providers">
       <div class="container">
-        <h2 class="section-title">10 World-Class Providers</h2>
-        <p class="section-subtitle">From photorealism to artistic renders, each provider excels at different tasks.</p>
+        <h2 class="section-title animate-on-scroll">10 World-Class Providers</h2>
+        <p class="section-subtitle animate-on-scroll">From photorealism to artistic renders, each provider excels at different tasks.</p>
         <div class="provider-grid">
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">OpenAI</div>
-            <div class="provider-strength">Versatile general-purpose generation with exceptional text rendering</div>
+            <div class="provider-strength">Versatile general-purpose generation with exceptional text rendering and world knowledge</div>
             <div class="provider-tags">
               <span class="tag">DALL-E 3</span>
               <span class="tag">GPT Image</span>
               <span class="tag">Text</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">BFL FLUX</div>
-            <div class="provider-strength">State-of-the-art photorealism and ultra-high resolution</div>
+            <div class="provider-strength">State-of-the-art photorealism and ultra-high resolution up to 4K</div>
             <div class="provider-tags">
               <span class="tag">FLUX.2</span>
               <span class="tag">4K</span>
               <span class="tag">Pro</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">Stability AI</div>
-            <div class="provider-strength">Fine parameter control with mature, reliable API</div>
+            <div class="provider-strength">Fine parameter control with mature, reliable API and img2img support</div>
             <div class="provider-tags">
               <span class="tag">SDXL</span>
               <span class="tag">img2img</span>
               <span class="tag">Control</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">Ideogram</div>
-            <div class="provider-strength">Industry-leading text-in-image and typography</div>
+            <div class="provider-strength">Industry-leading text-in-image rendering and typography quality</div>
             <div class="provider-tags">
               <span class="tag">Text</span>
               <span class="tag">Logos</span>
               <span class="tag">V3</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">Google Gemini</div>
-            <div class="provider-strength">Imagen 4 models with multimodal understanding</div>
+            <div class="provider-strength">Imagen 4 models with powerful multimodal understanding</div>
             <div class="provider-tags">
               <span class="tag">Imagen 4</span>
-              <span class="tag">Multi-image</span>
+              <span class="tag">Multimodal</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">FAL</div>
-            <div class="provider-strength">Ultra-fast generation with FLUX.2 models</div>
+            <div class="provider-strength">Ultra-fast generation with FLUX.2 models and sub-second speed</div>
             <div class="provider-tags">
               <span class="tag">Fast</span>
               <span class="tag">FLUX.2</span>
               <span class="tag">Pro</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">Leonardo</div>
-            <div class="provider-strength">Artistic renders, fantasy art, and game assets</div>
+            <div class="provider-strength">Artistic renders, fantasy art, cinematic quality, and game assets</div>
             <div class="provider-tags">
               <span class="tag">Artistic</span>
               <span class="tag">Fantasy</span>
               <span class="tag">Cinematic</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">Recraft</div>
-            <div class="provider-strength">#1 globally ranked for perfect text rendering</div>
+            <div class="provider-strength">#1 globally ranked model for perfect text rendering and vectors</div>
             <div class="provider-tags">
               <span class="tag">#1 ELO</span>
               <span class="tag">Vector</span>
               <span class="tag">Text</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">Replicate</div>
-            <div class="provider-strength">Access to FLUX.2 and community open models</div>
+            <div class="provider-strength">Access to FLUX.2 and community-driven open source models</div>
             <div class="provider-tags">
               <span class="tag">FLUX.2</span>
               <span class="tag">Open Source</span>
             </div>
           </div>
-          <div class="provider-card">
+          <div class="provider-card glass-card gradient-border animate-on-scroll">
             <div class="provider-name">ClipDrop</div>
-            <div class="provider-strength">Specialized post-processing and enhancement</div>
+            <div class="provider-strength">Specialized post-processing, upscaling, and background removal</div>
             <div class="provider-tags">
               <span class="tag">Upscale</span>
               <span class="tag">Remove BG</span>
@@ -532,35 +841,35 @@
 
     <section class="features" id="features">
       <div class="container">
-        <h2 class="section-title">Built for Production</h2>
-        <p class="section-subtitle">Enterprise-grade reliability with developer-friendly ergonomics.</p>
+        <h2 class="section-title animate-on-scroll">Built for Production</h2>
+        <p class="section-subtitle animate-on-scroll">Enterprise-grade reliability with developer-friendly ergonomics.</p>
         <div class="feature-grid">
-          <div class="feature">
+          <div class="feature animate-on-scroll">
             <div class="feature-icon">&#x26A1;</div>
             <h3>Intelligent Selection</h3>
             <p>Automatically routes to the best provider for your prompt. Text-heavy? Ideogram. Photorealistic? BFL. The right tool for every job.</p>
           </div>
-          <div class="feature">
+          <div class="feature animate-on-scroll">
             <div class="feature-icon">&#x1F504;</div>
             <h3>Automatic Fallbacks</h3>
             <p>If one provider fails, the system automatically tries the next best option. Your workflow never breaks.</p>
           </div>
-          <div class="feature">
+          <div class="feature animate-on-scroll">
             <div class="feature-icon">&#x1F512;</div>
             <h3>Security First</h3>
             <p>Input validation, rate limiting, resource cleanup. Built with OWASP best practices from day one.</p>
           </div>
-          <div class="feature">
+          <div class="feature animate-on-scroll">
             <div class="feature-icon">&#x1F3AF;</div>
             <h3>Claude Code Native</h3>
-            <p>Designed as a Claude Code plugin. Ask Claude to generate images and it just works - no MCP server setup required.</p>
+            <p>Designed as a Claude Code plugin. Ask Claude to generate images and it just works - no complex setup required.</p>
           </div>
-          <div class="feature">
+          <div class="feature animate-on-scroll">
             <div class="feature-icon">&#x1F4CA;</div>
             <h3>Full Type Safety</h3>
-            <p>TypeScript with Zod runtime validation. Catch errors at compile time, not production.</p>
+            <p>TypeScript with Zod runtime validation. Catch errors at compile time, not in production.</p>
           </div>
-          <div class="feature">
+          <div class="feature animate-on-scroll">
             <div class="feature-icon">&#x23F1;</div>
             <h3>Performance Optimized</h3>
             <p>Caching, connection pooling, O(n) provider selection. Fast when it needs to be fast.</p>
@@ -571,9 +880,9 @@
 
     <section class="install" id="install">
       <div class="container">
-        <h2 class="section-title">Get Started in Seconds</h2>
-        <p class="section-subtitle">Install as a Claude Code plugin or use standalone.</p>
-        <div class="code-block">
+        <h2 class="section-title animate-on-scroll">Get Started in Seconds</h2>
+        <p class="section-subtitle animate-on-scroll">Install as a Claude Code plugin or use standalone.</p>
+        <div class="code-block glass animate-on-scroll">
           <code>
             <span class="comment"># Install as Claude Code plugin</span><br>
             <span class="command">claude plugin add</span> <span class="string">shipdeckai/image-gen</span><br><br>
@@ -593,5 +902,37 @@
       <p>Built by <a href="https://github.com/shipdeckai">ShipdeckAI</a></p>
     </div>
   </footer>
+
+  <script>
+    // Header scroll effect
+    const header = document.getElementById('header');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+
+    // Scroll animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, index * 100);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.animate-on-scroll').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
 </body>
 </html>
