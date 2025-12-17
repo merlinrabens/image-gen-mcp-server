@@ -522,10 +522,28 @@ Tools support dual response formats via `response_format` parameter:
 1. Run full test suite: `npm test`
 2. Type check: `npm run typecheck`
 3. Build: `npm run build`
-4. Update version in package.json
+4. Update version: `npm version patch/minor/major` (auto-syncs plugin.json via postversion hook)
 5. Update README.md with changes
 6. Tag release: `git tag v1.x.x`
 7. Push: `git push --tags`
+
+**Version Sync**: The `postversion` npm hook automatically syncs `.claude-plugin/plugin.json` with `package.json`. You can also run `npm run sync-version` manually.
+
+## Claude Plugin Distribution
+
+The skill is distributed via the `claude-skills` marketplace:
+- **Marketplace repo**: `shipdeckai/claude-skills`
+- **Plugin source**: `shipdeckai/image-gen#main` (tracks main branch for auto-updates)
+
+**How updates work**:
+1. Push changes to `shipdeckai/image-gen` main branch
+2. Claude Code automatically fetches latest on new sessions
+3. Plugin version is determined by `.claude-plugin/plugin.json`
+
+**Clearing cached versions** (if users have stale cache):
+```bash
+rm -rf ~/.claude/plugins/cache/claude-skills/image-gen
+```
 
 ## Code Review Checklist
 
