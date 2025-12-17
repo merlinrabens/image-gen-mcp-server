@@ -16,7 +16,9 @@
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "validate-providers": "tsx scripts/validate-providers.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "sync-version": "node -e \"const pkg=require('./package.json');const fs=require('fs');const plugin=JSON.parse(fs.readFileSync('.claude-plugin/plugin.json'));plugin.version=pkg.version;fs.writeFileSync('.claude-plugin/plugin.json',JSON.stringify(plugin,null,2)+'\\n')\"",
+    "postversion": "npm run sync-version && git add .claude-plugin/plugin.json"
   },
   "keywords": [
     "image-generation",
